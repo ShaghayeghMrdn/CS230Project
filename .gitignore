@@ -1,0 +1,8 @@
+*.dtrace.gz
+*.inv.gz
+*/target/*
+*/project/*
+*.log
+AutoDaikon/*.class
+AutoDaikon/*_backup
+AutoDaikon/*.data
