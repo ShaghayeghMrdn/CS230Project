@@ -1,6 +1,7 @@
 package generator
 
 import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.log4j.{Logger, Level}
 import java.io._
 import java.lang.StringBuilder
 import scala.collection.mutable.ArrayBuffer
@@ -10,7 +11,7 @@ import generator.CodeGenerator._
 object MockGen {
 
     val alphaNum = (('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')).toSet
-    val SRC_PATH = "../../SparkExamples/Classification/file1ss_s"
+    val SRC_PATH = "../../SparkExamples/SelfJoin_LineageDD/file2_950"
     // val SRC_PATH = "../../SparkExamples/MLlib/SVM/sample_small.txt"
 
     def countDelimiters (line: String): Map[Char, Int] = {
@@ -25,7 +26,7 @@ object MockGen {
         counts
     }
 
-    def findPattern(/*sc: SparkContext, */line: String, notSeen: ArrayBuffer[Char]): Node = {
+    def findPattern(sc: SparkContext, line: String, notSeen: ArrayBuffer[Char]): Node = {
         var priority = 0
         var found: Node = new Typed("String")
         //----------------------- multi part
@@ -33,24 +34,15 @@ object MockGen {
             val parts = line.split(delim)
             if(parts.length > 2) { 
                 var newFound = ""
-                var subpart = TypeInferrer.typeInfer(parts(0))
-                var child = subpart match {
-                    case "String" => findPattern(parts(0), notSeen)
-                    case _ => new Typed(subpart)
+                var subpattern = TypeInferrer.typeInfer(parts(0))
+                var child = subpattern match {
+                    case "String" => findPattern(sc, parts(0), notSeen)
+                    case _ => new Typed(subpattern)
                 }
 
-                for(i <- 1 to parts.length-1) {
-                    subpart = TypeInferrer.typeInfer(parts(i))
-                    var newChild = subpart match {
-                        case "String" => findPattern(parts(i), notSeen)
-                        case _ => new Typed(subpart)
-                    }    
-                    
-                    if(newChild.toString != child.toString)
-                        child = new Typed("String")    
-                }
-
-                if(child.toString != "String"){
+                val disParts = sc.parallelize(parts)
+                val result = disParts.map(part => (part, child.doesHold(part))).filter(pair => (pair._2 == false)).collect()
+                if(result.length == 0) {
                     found = new Multi(delim.toString, child)
                     priority = 6
                 }
@@ -67,12 +59,12 @@ object MockGen {
                 var second = TypeInferrer.typeInfer(secondPart)
                 
                 var firstChild = first match {
-                    case "String" => findPattern(firstPart, notSeen)
+                    case "String" => findPattern(sc, firstPart, notSeen)
                     case _ => new Typed(first)
                 }
 
                 var secondChild = second match {
-                    case "String" => findPattern(secondPart, notSeen)
+                    case "String" => findPattern(sc, secondPart, notSeen)
                     case _ => new Typed(second)
                 }
                 
@@ -105,14 +97,19 @@ object MockGen {
         val delimitersCount = countDelimiters(line)
         val min = delimitersCount.valuesIterator.min
 
-        // val conf = new SparkConf()
-        // conf.setMaster("local[4]")
-        // conf.setAppName("MockGenerator")
-        // val sc = new SparkContext(conf)
+        val conf = new SparkConf()
+        conf.setMaster("local[8]")
+        conf.setAppName("MockGenerator")
+        val sc = new SparkContext(conf)
+
+        val rootLogger = Logger.getRootLogger()
+        rootLogger.setLevel(Level.ERROR)
+        // Logger.getLogger("org").setLevel(Level.OFF)
+        // Logger.getLogger("akka").setLevel(Level.OFF)
 
         val notSeen = ArrayBuffer[Char]()
         delimitersCount.keys.copyToBuffer(notSeen)
-        var tree = findPattern(line, notSeen)
+        var tree = findPattern(sc, line, notSeen)
         println(tree)
 
         var result = ""

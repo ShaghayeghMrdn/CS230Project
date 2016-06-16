@@ -1,0 +1,51 @@
+package AutoDaikon;
+
+public class Mock {
+
+    int mock_5(String record) { //***_123
+        try{
+            return Integer.parseInt(record);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    int mock_4(String record) { //123_***
+        try{
+            return Integer.parseInt(record);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    void mock_3(String record) {
+        String[] parts = record.split("_");
+        if(parts.length == 2) {
+            if(mock_4(parts[0]) < 0) System.out.println("Expected to be Int -> "+parts[0]+"[2]");
+            if(mock_5(parts[1]) < 0) System.out.println("Expected to be Int -> "+parts[1]+"[1]");
+        } else
+            System.out.println("Expected to be in the format of ***_*** -> "+record);
+    }
+
+    void mock_2(String record) {
+        String[] parts = record.split(",");
+        for(String part: parts)
+            mock_3(part);
+    }
+
+    int mock_1(String record) { //1:****
+        try{
+            return Integer.parseInt(record);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    void mock_0(String record) {
+        String[] parts = record.split(":");
+        if(parts.length == 2) {
+            if(mock_1(parts[0]) < 0) System.out.println("Expected to be Int -> "+parts[0]+"[0]");
+            mock_2(parts[1]);
+        } else System.out.println("Expected to be in the format of ***:*** -> "+record);
+    }
+}
