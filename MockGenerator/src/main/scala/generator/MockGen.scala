@@ -25,7 +25,7 @@ object MockGen {
         counts
     }
 
-    def findPattern(/*sc: SparkContext, */line: String, notSeen: ArrayBuffer[Char]): Node = {
+    def findPattern(line: String, notSeen: ArrayBuffer[Char]): Node = {
         var priority = 0
         var found: Node = new Typed("String")
         //----------------------- multi part
@@ -96,19 +96,14 @@ object MockGen {
         found
     }
 
-    def main(args: Array[String]): Unit = {
+    def generate(SRC_PATH: String) : Node = {
         val lines = ArrayBuffer[String]()
         val source = scala.io.Source.fromFile(SRC_PATH)
         try source.getLines.copyToBuffer(lines) finally source.close()
         val line = lines(0)
 
         val delimitersCount = countDelimiters(line)
-        val min = delimitersCount.valuesIterator.min
-
-        // val conf = new SparkConf()
-        // conf.setMaster("local[4]")
-        // conf.setAppName("MockGenerator")
-        // val sc = new SparkContext(conf)
+        //val min = delimitersCount.valuesIterator.min
 
         val notSeen = ArrayBuffer[Char]()
         delimitersCount.keys.copyToBuffer(notSeen)
@@ -121,10 +116,10 @@ object MockGen {
 public class Mock {
     """ + tree.genMock("0") + """
 }"""
-        //println(result)
         val writer = new PrintWriter("Mock.java", "UTF-8")
         writer.println(result)
         writer.close()
-
+        tree
     }
+
 }

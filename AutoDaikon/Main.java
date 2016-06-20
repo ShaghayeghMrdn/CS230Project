@@ -12,7 +12,8 @@ public class Main {
     public static void main(String[] args) {
         String line = "";
         try {
-            String path = "../SparkExamples/Classification/file1s_50";
+            String path = args[0];
+            System.out.println(path);
             BufferedReader reader = new BufferedReader(new FileReader(path));
             while ((line = reader.readLine()) != null) {
                 if(!line.equals("")){

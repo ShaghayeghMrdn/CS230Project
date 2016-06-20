@@ -34,4 +34,5 @@ public class Mock {
             mock_02(parts[1]);
         } else System.out.println("Expected to be in the format of ***:*** -> "+record);
     }
+    
 }
