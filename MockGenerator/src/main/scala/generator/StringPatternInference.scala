@@ -5,14 +5,15 @@ import java.io._
 import java.lang.StringBuilder
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
-import generator.CodeGenerator._
+import scala.util.control.Breaks._
 
-object MockGen {
+import generator.DataPattern._
+import generator.TypeInference._
+
+object StringPatternInference {
 
     val alphaNum = (('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')).toSet
-    val SRC_PATH = "../../SparkExamples/Classification/file1ss_s"
-    // val SRC_PATH = "../../SparkExamples/MLlib/SVM/sample_small.txt"
-
+    
     def countDelimiters (line: String): Map[Char, Int] = {
         val delimiters = line.filter(!alphaNum.contains(_))
         val counts = Map[Char, Int]()
@@ -21,37 +22,32 @@ object MockGen {
                 counts(c) = counts(c) + 1
             else counts += (c -> 1)
         }
-        println(counts)
         counts
     }
 
-    def findPattern(line: String, notSeen: ArrayBuffer[Char]): Node = {
+    def findPattern(line: String, notSeen: ArrayBuffer[Char]): Pattern = {
         var priority = 0
-        var found: Node = new Typed("String")
+        var found: Pattern = new StringLiteral()
         //----------------------- multi part
         for(delim <- notSeen) {
             val parts = line.split(delim)
             if(parts.length > 2) { 
                 var newFound = ""
-                var subpart = TypeInferrer.typeInfer(parts(0))
-                var child = subpart match {
-                    case "String" => findPattern(parts(0), notSeen)
-                    case _ => new Typed(subpart)
-                }
+                var child: Pattern = typeInfer(parts(0))
+                if(child.isInstanceOf[StringLiteral])
+                    child = findPattern(parts(0), notSeen)
 
-                for(i <- 1 to parts.length-1) {
-                    subpart = TypeInferrer.typeInfer(parts(i))
-                    var newChild = subpart match {
-                        case "String" => findPattern(parts(i), notSeen)
-                        case _ => new Typed(subpart)
-                    }    
-                    
-                    if(newChild.toString != child.toString)
-                        child = new Typed("String")    
+                var result = true
+                var part = ""
+                try {
+                    for(part <- parts)
+                        child.doesHold(part)
+                } catch {
+                    case e: DidNotMatchPattern => result = false
                 }
-
-                if(child.toString != "String"){
-                    found = new Multi(delim.toString, child)
+                      
+                if(result) {
+                    found = new ListLiteral(delim.toString, child)
                     priority = 6
                 }
             }
@@ -63,32 +59,28 @@ object MockGen {
                 var firstPart = line.substring(0, line.indexOf(delim))
                 var secondPart = line.substring(line.indexOf(delim)+1)
 
-                var first = TypeInferrer.typeInfer(firstPart)
-                var second = TypeInferrer.typeInfer(secondPart)
+                var first: Pattern = typeInfer(firstPart)
+                var second: Pattern = typeInfer(secondPart)
                 
-                var firstChild = first match {
-                    case "String" => findPattern(firstPart, notSeen)
-                    case _ => new Typed(first)
-                }
-
-                var secondChild = second match {
-                    case "String" => findPattern(secondPart, notSeen)
-                    case _ => new Typed(second)
-                }
+                if(first.isInstanceOf[StringLiteral])
+                    first = findPattern(firstPart, notSeen)
+    
+                if(second.isInstanceOf[StringLiteral])
+                    second = findPattern(secondPart, notSeen)
                 
                 var newPriority = 1
-                if(firstChild.isInstanceOf[Multi])
+                if(first.isInstanceOf[ListLiteral])
                     newPriority += 2
-                else if(firstChild.toString != "String")
+                else if(!first.isInstanceOf[StringLiteral])
                     newPriority += 1
 
-                if(secondChild.isInstanceOf[Multi])
+                if(second.isInstanceOf[ListLiteral])
                     newPriority += 2
-                else if(secondChild.toString != "String")
+                else if(!second.isInstanceOf[StringLiteral])
                     newPriority += 1
 
                 if(newPriority > priority){
-                    found = new Binary(delim.toString, firstChild, secondChild)
+                    found = new TupleLiteral(delim.toString, first, second)
                     priority = newPriority
                 }
             }
@@ -96,14 +88,13 @@ object MockGen {
         found
     }
 
-    def generate(SRC_PATH: String) : Node = {
+    def generateMock(SRC_PATH: String) : Pattern = {
         val lines = ArrayBuffer[String]()
         val source = scala.io.Source.fromFile(SRC_PATH)
         try source.getLines.copyToBuffer(lines) finally source.close()
         val line = lines(0)
 
         val delimitersCount = countDelimiters(line)
-        //val min = delimitersCount.valuesIterator.min
 
         val notSeen = ArrayBuffer[Char]()
         delimitersCount.keys.copyToBuffer(notSeen)
@@ -112,7 +103,7 @@ object MockGen {
 
         var result = ""
         result += 
-"""package AutoDaikon;
+"""//package AutoDaikon;
 public class Mock {
     """ + tree.genMock("0") + """
 }"""
@@ -121,5 +112,4 @@ public class Mock {
         writer.close()
         tree
     }
-
 }

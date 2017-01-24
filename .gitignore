@@ -3,7 +3,7 @@
 */target/*
 */project/*
 *.log
-AutoDaikon/*.class
-AutoDaikon/*_backup
-AutoDaikon/*.data
+temp*
+*-temp
 WorkingDir/*
+MockGenerator/Mock.java
