@@ -1,0 +1,43 @@
+//data/BigData/ArterialData/traveltimes/L50_traveltimes.csv
+public class Mock {
+	long mock_A(String record) {
+        return Long.parseLong(record);
+    }
+	long mock_B(String record) {
+        return Long.parseLong(record);
+    }
+	int mock_C(String record) {
+        return record.length();
+    }
+	long mock_D(String record) {
+        return Long.parseLong(record);
+    }
+	int mock_E(String record) {
+        return record.length();
+    }
+	void mock_0(String record) {
+        String[] parts = record.split(",");
+        if(parts.length == 5) {			
+            try{
+                long x00 = mock_A(parts[0]);
+            } catch (NumberFormatException e) {
+                System.out.println("Expected to be A:DecimalShort -> "+parts[0]);   
+            }
+			
+            try{
+                long x01 = mock_B(parts[1]);
+            } catch (NumberFormatException e) {
+                System.out.println("Expected to be B:DecimalShort -> "+parts[1]);   
+            }
+			mock_C(parts[2]);
+			
+            try{
+                long x03 = mock_D(parts[3]);
+            } catch (NumberFormatException e) {
+                System.out.println("Expected to be D:DecimalShort -> "+parts[3]);   
+            }
+			mock_E(parts[4]);
+		} else System.out.println("Expected to be in the format of Tuple5[','] -> "+record);
+    }
+
+}

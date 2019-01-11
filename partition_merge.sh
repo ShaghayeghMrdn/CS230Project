@@ -23,7 +23,8 @@ do
         first="true"
     fi
     cd ../WorkingDir
-    java -cp "../../daikon-5.3.0/daikon.jar:." daikon.Chicory --daikon Main "../temp/$f"
+    # java -cp "../../daikon-5.3.0/daikon.jar:." daikon.Chicory --daikon Main "../temp/$f"
+    java -cp "../../daikon-5.5.8/daikon.jar:." daikon.Chicory --daikon Main "../temp/$f"
     mv Main.inv.gz "$f.inv.gz"
 done
 java -cp "../../daikon-5.3.0/daikon.jar:." daikon.MergeInvariants -o merged.inv.gz x*.inv.gz
