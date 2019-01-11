@@ -7,6 +7,9 @@ if ! [ -n "$input_path" ]; then
     exit
 fi
 
+
+echo "Here is the second step"
+
 first=""
 cd temp/
 split -l 1000 -d ../$input_path
