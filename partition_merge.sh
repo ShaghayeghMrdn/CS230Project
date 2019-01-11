@@ -1,5 +1,6 @@
 #! /bin/sh
 input_path=$1
+echo "Changes in master"
 echo "Running sequential daikon with merging functionality"
 if ! [ -n "$input_path" ]; then
     echo "argument error"
